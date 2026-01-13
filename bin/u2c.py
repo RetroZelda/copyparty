@@ -103,6 +103,8 @@ except:
 class BadAuth(Exception):
     pass
 
+class CantConnect(Exception):
+    pass
 
 class Daemon(threading.Thread):
     def __init__(self, target, name=None, a=None):
@@ -859,6 +861,9 @@ def handshake(ar, file, search):
                 return [], False
             elif sc == 409 or "<pre>upload rejected, file already exists" in txt:
                 return [], False
+            elif sc == 502 or "Bad Gateway" in txt:
+                print("\nERROR: Server not found:\n%s" % (txt,))
+                raise CantConnect()
             elif sc == 403 or sc == 401:
                 print("\nERROR: login required, or wrong password:\n%s" % (txt,))
                 raise BadAuth()
@@ -1052,6 +1057,8 @@ class Ctl(object):
                 try:
                     hs, _ = handshake(self.ar, file, search)
                 except BadAuth:
+                    sys.exit(1)
+                except CantConnect:
                     sys.exit(1)
 
                 if search:
@@ -1357,6 +1364,9 @@ class Ctl(object):
             try:
                 hs, sprs = handshake(self.ar, file, search)
             except BadAuth:
+                self.panik = 1
+                break
+            except CantConnect:
                 self.panik = 1
                 break
 
